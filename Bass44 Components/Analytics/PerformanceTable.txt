@@ -1,0 +1,47 @@
+import React from "react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+
+export default function PerformanceTable({ listings, products, loading }) {
+  const performanceData = listings.map(listing => {
+    const product = products.find(p => p.id === listing.product_id);
+    return {
+      ...listing,
+      productTitle: product ? product.title : 'Unknown Product',
+      productCategory: product ? product.category : 'unknown'
+    };
+  });
+
+  const topPerforming = performanceData
+    .filter(item => item.status === 'active' && item.views > 0)
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 10);
+
+  return (
+    <div className="neumorph-card p-6">
+      <h2 className="text-xl font-bold mb-6" style={{ color: '#6b6b6b' }}>
+        Top Performing Listings
+      </h2>
+      
+      {loading ? (
+        <div className="space-y-4">
+          {Array(5).fill(0).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4 neumorph-inset animate-pulse">
+              <div className="w-8 h-8 bg-gray-300 rounded"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                <div className="h-3 bg-gray-300 rounded w-2/3"></div>
+              </div>
+              <div className="h-4 bg-gray-300 rounded w-16"></div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {topPerforming.map((item, index) => (
+            <div key={item.id} className="flex items-center gap-4 p-4 neumorph-inset">
+              <div className="neumorph-button p-2 text-sm font-bold" style={{ color: '#6b6b6b' }}>
+                #{index + 1}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium" style={{ color: '#6b6b6b' }}>
+                  {item.productTitle}

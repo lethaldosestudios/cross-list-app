@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-neumorph-bg text-licorice;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .neumorph-card {
+    @apply bg-neumorph-bg rounded-neumorph shadow-neumorph;
+  }
+  
+  .neumorph-inset {
+    @apply bg-neumorph-bg rounded-neumorph-inset shadow-neumorph-inset;
+  }
+  
+  .neumorph-button {
+    @apply bg-neumorph-bg rounded-neumorph-button shadow-neumorph-button border-none transition-all duration-300;
+  }
+  
+  .neumorph-button:hover {
+    @apply shadow-neumorph-button-hover;
+  }
+  
+  .neumorph-button:active,
+  .neumorph-button.pressed {
+    @apply shadow-neumorph-button-active;
+  }
+  
+  .neumorph-nav {
+    @apply bg-neumorph-bg rounded-neumorph-nav shadow-neumorph-nav;
+  }
+  
+  .neumorph-nav-item {
+    @apply bg-transparent rounded-neumorph-nav-item border-none transition-all duration-300;
+  }
+  
+  .neumorph-nav-item:hover {
+    @apply shadow-neumorph-nav-item;
+  }
+  
+  .neumorph-nav-item.active {
+    @apply shadow-neumorph-nav-item-active;
+  }
+  
+  .neumorph-input {
+    @apply bg-neumorph-bg rounded-neumorph-input shadow-neumorph-input border-none px-4 py-3 font-medium;
+  }
+  
+  .neumorph-input:focus {
+    @apply outline-none ring-2 ring-royal-purple ring-opacity-50;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-neumorph-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-cool-gray rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-royal-purple;
+}

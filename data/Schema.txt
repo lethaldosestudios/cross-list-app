@@ -1,0 +1,82 @@
+title
+(
+text
+, required
+)
+Product title
+
+description
+(
+text
+)
+Product description
+
+price
+(
+number
+, required
+)
+Base price
+
+cost
+(
+number
+)
+Cost to acquire/make
+
+category
+(
+text
+, required
+)
+Options: electronics, clothing, home, books, collectibles, jewelry, automotive, sports, toys, other
+condition
+(
+text
+, required
+)
+Options: new, like_new, good, fair, poor
+quantity
+(
+number
+, required
+)
+Available quantity
+
+weight
+(
+number
+)
+Weight in pounds
+
+dimensions
+(
+object
+)
+length
+(
+number
+)
+width
+(
+number
+)
+height
+(
+number
+)
+photos
+(
+array
+)
+Array of photo URLs
+
+tags
+(
+array
+)
+sku
+(
+text
+)
+Stock keeping unit

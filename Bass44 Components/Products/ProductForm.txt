@@ -1,0 +1,54 @@
+import React, { useState } from "react";
+import { X, Upload, Plus, Trash2 } from "lucide-react";
+import { UploadFile } from "@/integrations/Core";
+
+export default function ProductForm({ product, onSubmit, onCancel }) {
+  const [formData, setFormData] = useState({
+    title: product?.title || '',
+    description: product?.description || '',
+    price: product?.price || '',
+    cost: product?.cost || '',
+    category: product?.category || 'other',
+    condition: product?.condition || 'new',
+    quantity: product?.quantity || 1,
+    weight: product?.weight || '',
+    dimensions: product?.dimensions || { length: '', width: '', height: '' },
+    photos: product?.photos || [],
+    tags: product?.tags || [],
+    sku: product?.sku || ''
+  });
+
+  const [uploading, setUploading] = useState(false);
+  const [newTag, setNewTag] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    setUploading(true);
+    
+    try {
+      const uploadPromises = files.map(file => UploadFile({ file }));
+      const results = await Promise.all(uploadPromises);
+      const urls = results.map(r => r.file_url);
+      
+      setFormData(prev => ({
+        ...prev,
+        photos: [...prev.photos, ...urls]
+      }));
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index)
+    }));
+  };

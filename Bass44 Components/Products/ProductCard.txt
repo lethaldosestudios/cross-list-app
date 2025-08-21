@@ -1,0 +1,55 @@
+import React from "react";
+import { MoreHorizontal, Edit, Trash2, Eye, Package, Plus } from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+
+export default function ProductCard({ product, onEdit, onDelete, onCreateListing }) {
+  const handleCardClick = (e) => {
+    // Prevent card click when clicking on buttons or dropdown
+    if (e.target.closest('button') || e.target.closest('[data-radix-popper-content-wrapper]')) {
+      return;
+    }
+    onEdit(product);
+  };
+
+  return (
+    <div 
+      className="neumorph-card p-6 group cursor-pointer hover:shadow-lg transition-shadow"
+      onClick={handleCardClick}
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-3">
+          <div className="neumorph-button p-2">
+            <Package className="w-5 h-5" style={{ color: '#8b8b8b' }} />
+          </div>
+          <div>
+            <h3 className="font-bold" style={{ color: '#6b6b6b' }}>
+              {product.title}
+            </h3>
+            <p className="text-sm" style={{ color: '#999' }}>
+              {product.category} • {product.condition}
+            </p>
+          </div>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="neumorph-button p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <MoreHorizontal className="w-4 h-4" style={{ color: '#8b8b8b' }} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="neumorph-card border-none">
+            <DropdownMenuItem onClick={() => onEdit(product)}>
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Product
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onCreateListing(product)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Listing
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(product.id)}>
+              <Trash2 className="w-4 h-4 mr-2" />
+ 

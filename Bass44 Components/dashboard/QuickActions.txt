@@ -1,0 +1,55 @@
+
+import React from "react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Plus, ShoppingCart, BarChart3, Settings } from "lucide-react";
+
+export default function QuickActions() {
+  const actions = [
+    {
+      title: "Add Product",
+      description: "Create a new product listing",
+      icon: Plus,
+      url: createPageUrl("Products")
+    },
+    {
+      title: "Create Listing",
+      description: "List product on marketplace",
+      icon: ShoppingCart,
+      url: createPageUrl("Listings")
+    },
+    {
+      title: "View Analytics",
+      description: "Check performance metrics",
+      icon: BarChart3,
+      url: createPageUrl("Analytics")
+    }
+  ];
+
+  return (
+    <div className="neumorph-card p-4 md:p-6">
+      <h2 className="text-xl font-bold mb-6" style={{ color: '#6b6b6b' }}>
+        Quick Actions
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {actions.map((action, index) => (
+          <Link key={index} to={action.url}>
+            <button className="neumorph-button w-full p-4 text-left transition-all">
+              <div className="flex items-center gap-3">
+                <action.icon className="w-5 h-5" style={{ color: '#8b8b8b' }} />
+                <div>
+                  <p className="font-medium" style={{ color: '#6b6b6b' }}>
+                    {action.title}
+                  </p>
+                  <p className="text-sm" style={{ color: '#999' }}>
+                    {action.description}
+                  </p>
+                </div>
+              </div>
+            </button>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}

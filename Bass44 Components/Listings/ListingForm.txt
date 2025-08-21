@@ -1,0 +1,54 @@
+import React, { useState, useEffect } from "react";
+import { X, Loader2, Sparkles } from "lucide-react";
+
+const MARKETPLACES = [
+  { value: "ebay", label: "eBay" },
+  { value: "amazon", label: "Amazon" },
+  { value: "facebook", label: "Facebook" },
+  { value: "mercari", label: "Mercari" },
+  { value: "poshmark", label: "Poshmark" },
+  { value: "depop", label: "Depop" },
+  { value: "etsy", label: "Etsy" },
+  { value: "shopify", label: "Shopify" },
+];
+
+export default function ListingForm({ listing, products, onSubmit, onCancel, isOptimizingAI, preselectedProductId }) {
+  const [formData, setFormData] = useState({
+    product_id: listing?.product_id || preselectedProductId || '',
+    marketplace: listing?.marketplace || '',
+    marketplaces: [],
+    listing_price: listing?.listing_price || '',
+    listing_title: listing?.listing_title || '',
+    listing_description: listing?.listing_description || '',
+    status: listing?.status || 'draft',
+    listed_date: listing?.listed_date || new Date().toISOString().split('T')[0],
+    end_date: listing?.end_date || '',
+    auto_relist: listing?.auto_relist || false,
+    optimizeWithAI: false
+  });
+
+  // Update form when preselected product changes
+  useEffect(() => {
+    if (preselectedProductId && !listing) {
+      const selectedProduct = products.find(p => p.id === preselectedProductId);
+      if (selectedProduct) {
+        setFormData(prev => ({
+          ...prev,
+          product_id: preselectedProductId,
+          listing_price: selectedProduct.price,
+          listing_title: selectedProduct.title,
+          listing_description: selectedProduct.description || ''
+        }));
+      }
+    }
+  }, [preselectedProductId, products, listing]);
+
+  const handleMarketplaceToggle = (marketplace) => {
+    setFormData(prev => {
+      const newMarketplaces = prev.marketplaces.includes(marketplace)
+        ? prev.marketplaces.filter(m => m !== marketplace)
+        : [...prev.marketplaces, marketplace];
+      return { ...prev, marketplaces: newMarketplaces };
+    });
+  };
+

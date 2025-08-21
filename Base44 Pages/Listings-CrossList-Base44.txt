@@ -1,0 +1,292 @@
+
+import React, { useState, useEffect } from "react";
+import { Listing } from "@/entities/Listing";
+import { Product } from "@/entities/Product";
+import { Plus, Search, Filter, ShoppingCart } from "lucide-react";
+import { InvokeLLM } from "@/integrations/Core";
+
+import ListingCard from "../components/listings/ListingCard";
+import ListingForm from "../components/listings/ListingForm";
+import ListingFilters from "../components/listings/ListingFilters";
+
+export default function Listings() {
+  const [listings, setListings] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingListing, setEditingListing] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    marketplace: "all",
+    status: "all"
+  });
+  const [isOptimizingAI, setIsOptimizingAI] = useState(false);
+  const [preselectedProductId, setPreselectedProductId] = useState(null);
+
+  useEffect(() => {
+    loadData();
+    
+    // Check for URL parameters to pre-select product
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('product_id');
+    const action = urlParams.get('action');
+    
+    if (productId && action === 'create') {
+      setPreselectedProductId(productId);
+      setShowForm(true);
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [listingsData, productsData] = await Promise.all([
+        Listing.list('-created_date'),
+        Product.list()
+      ]);
+      setListings(listingsData);
+      setProducts(productsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (listingData) => {
+    try {
+      if (editingListing) {
+        await Listing.update(editingListing.id, listingData);
+      } else {
+        const selectedProduct = products.find(p => p.id === listingData.product_id);
+        if (!selectedProduct) {
+          console.error("No product selected");
+          return;
+        }
+
+        let listingsToCreate = listingData.marketplaces.map(marketplace => {
+          const { marketplaces, optimizeWithAI, ...commonData } = listingData;
+          
+          return {
+            ...commonData,
+            marketplace: marketplace,
+            listing_title: commonData.listing_title || selectedProduct.title,
+            listing_description: commonData.listing_description || selectedProduct.description,
+            listing_price: commonData.listing_price || selectedProduct.price,
+          };
+        });
+
+        if (listingData.optimizeWithAI) {
+          setIsOptimizingAI(true);
+          
+          try {
+            const optimizedPromises = listingsToCreate.map(async (listing) => {
+              try {
+                const prompt = `Optimize this product listing for ${listing.marketplace.toUpperCase()} marketplace. Focus on SEO keywords, compelling copy, and platform-specific best practices to maximize visibility and sales.
+
+Product Details:
+- Title: "${selectedProduct.title}"
+- Description: "${selectedProduct.description || 'No description provided'}"
+- Category: "${selectedProduct.category}"
+- Condition: "${selectedProduct.condition}"
+- Price: $${selectedProduct.price}
+- Tags: "${(selectedProduct.tags || []).join(', ')}"
+
+Requirements for ${listing.marketplace.toUpperCase()}:
+- Create an engaging, keyword-rich title (keep under 80 characters)
+- Write a detailed, persuasive description that highlights key features and benefits
+- Use marketplace-specific language and formatting conventions
+- Focus on what buyers on ${listing.marketplace} typically look for
+
+Provide the optimized content in JSON format.`;
+
+                const response = await InvokeLLM({
+                  prompt: prompt,
+                  response_json_schema: {
+                    type: "object",
+                    properties: {
+                      optimized_title: { 
+                        type: "string",
+                        description: "SEO-optimized title for the marketplace"
+                      },
+                      optimized_description: { 
+                        type: "string",
+                        description: "Compelling product description tailored for the marketplace"
+                      }
+                    },
+                    required: ["optimized_title", "optimized_description"]
+                  }
+                });
+                
+                if (response && response.optimized_title && response.optimized_description) {
+                  return {
+                    ...listing,
+                    listing_title: response.optimized_title,
+                    listing_description: response.optimized_description
+                  };
+                } else {
+                  console.warn(`AI optimization failed for ${listing.marketplace}. Using defaults.`);
+                  return listing;
+                }
+              } catch (aiError) {
+                console.error(`Error optimizing ${listing.marketplace}:`, aiError);
+                return listing;
+              }
+            });
+            
+            listingsToCreate = await Promise.all(optimizedPromises);
+          } catch (error) {
+            console.error('Error during AI optimization:', error);
+          } finally {
+            setIsOptimizingAI(false);
+          }
+        }
+
+        if (listingsToCreate.length > 0) {
+          await Listing.bulkCreate(listingsToCreate);
+        }
+      }
+      setShowForm(false);
+      setEditingListing(null);
+      setPreselectedProductId(null);
+      loadData();
+    } catch (error) {
+      console.error('Error saving listing(s):', error);
+      setIsOptimizingAI(false);
+    }
+  };
+
+  const handleEdit = (listing) => {
+    setEditingListing(listing);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (listingId) => {
+    try {
+      await Listing.delete(listingId);
+      loadData();
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+    }
+  };
+
+  const getProductTitle = (productId) => {
+    const product = products.find(p => p.id === productId);
+    return product ? product.title : 'Unknown Product';
+  };
+
+  const filteredListings = listings.filter(listing => {
+    const productTitle = getProductTitle(listing.product_id);
+    const matchesSearch = productTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         listing.listing_title?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesMarketplace = filters.marketplace === "all" || listing.marketplace === filters.marketplace;
+    const matchesStatus = filters.status === "all" || listing.status === filters.status;
+
+    return matchesSearch && matchesMarketplace && matchesStatus;
+  });
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: '#6b6b6b' }}>
+            Listings
+          </h1>
+          <p style={{ color: '#999' }}>
+            Manage your marketplace listings
+          </p>
+        </div>
+        <button 
+          className="neumorph-button px-6 py-3 flex items-center gap-2 font-medium" 
+          style={{ color: '#6b6b6b' }}
+          onClick={() => setShowForm(true)}
+        >
+          <Plus className="w-4 h-4" />
+          Create Listing
+        </button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="neumorph-card p-4 md:p-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: '#999' }} />
+            <input
+              type="text"
+              placeholder="Search listings..."
+              className="neumorph-input w-full pl-10 pr-4 py-3 font-medium"
+              style={{ color: '#6b6b6b' }}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <ListingFilters filters={filters} onFilterChange={setFilters} />
+        </div>
+
+        {/* Results Info */}
+        <div className="flex items-center justify-between mb-6">
+          <p style={{ color: '#999' }}>
+            {filteredListings.length} listings found
+          </p>
+        </div>
+
+        {/* Listings Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array(6).fill(0).map((_, i) => (
+              <div key={i} className="neumorph-card p-6 animate-pulse">
+                <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                <div className="h-3 bg-gray-300 rounded mb-4"></div>
+                <div className="h-6 bg-gray-300 rounded"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredListings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                productTitle={getProductTitle(listing.product_id)}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
+
+        {!loading && filteredListings.length === 0 && (
+          <div className="text-center py-12">
+            <ShoppingCart className="w-16 h-16 mx-auto mb-4" style={{ color: '#999' }} />
+            <h3 className="text-lg font-medium mb-2" style={{ color: '#6b6b6b' }}>
+              No listings found
+            </h3>
+            <p style={{ color: '#999' }}>
+              {searchTerm || filters.marketplace !== "all" || filters.status !== "all"
+                ? "Try adjusting your search or filters"
+                : "Start by creating your first listing"}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Listing Form Modal */}
+      {showForm && (
+        <ListingForm
+          listing={editingListing}
+          products={products}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingListing(null);
+            setPreselectedProductId(null);
+          }}
+          isOptimizingAI={isOptimizingAI}
+          preselectedProductId={preselectedProductId}
+        />
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,119 @@
+
+import React, { useState, useEffect } from "react";
+import { Product } from "@/entities/Product";
+import { Listing } from "@/entities/Listing";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { 
+  Plus, 
+  Package, 
+  ShoppingCart, 
+  TrendingUp, 
+  DollarSign,
+  Eye,
+  Users,
+  Clock
+} from "lucide-react";
+
+import StatsCard from "../components/dashboard/StatsCard";
+import QuickActions from "../components/dashboard/QuickActions";
+import RecentProducts from "../components/dashboard/RecentProducts";
+import ActiveListings from "../components/dashboard/ActiveListings";
+import PerformanceChart from "../components/dashboard/PerformanceChart";
+
+export default function Dashboard() {
+  const [products, setProducts] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [productsData, listingsData] = await Promise.all([
+        Product.list('-created_date', 10),
+        Listing.list('-created_date', 10)
+      ]);
+      setProducts(productsData);
+      setListings(listingsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stats = {
+    totalProducts: products.length,
+    activeListings: listings.filter(l => l.status === 'active').length,
+    totalValue: products.reduce((sum, p) => sum + (p.price * p.quantity), 0),
+    totalViews: listings.reduce((sum, l) => sum + (l.views || 0), 0)
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: '#6b6b6b' }}>
+            Dashboard
+          </h1>
+          <p style={{ color: '#999' }}>
+            Manage your products across multiple marketplaces
+          </p>
+        </div>
+        <Link to={createPageUrl("Products")}>
+          <button className="neumorph-button px-6 py-3 flex items-center gap-2 font-medium" style={{ color: '#6b6b6b' }}>
+            <Plus className="w-4 h-4" />
+            Add Product
+          </button>
+        </Link>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard
+          title="Total Products"
+          value={stats.totalProducts}
+          icon={Package}
+          loading={loading}
+        />
+        <StatsCard
+          title="Active Listings"
+          value={stats.activeListings}
+          icon={ShoppingCart}
+          loading={loading}
+        />
+        <StatsCard
+          title="Inventory Value"
+          value={`$${stats.totalValue.toLocaleString()}`}
+          icon={DollarSign}
+          loading={loading}
+        />
+        <StatsCard
+          title="Total Views"
+          value={stats.totalViews.toLocaleString()}
+          icon={Eye}
+          loading={loading}
+        />
+      </div>
+
+      {/* Quick Actions */}
+      <QuickActions />
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <RecentProducts products={products} loading={loading} />
+          <PerformanceChart listings={listings} />
+        </div>
+        
+        <div className="space-y-8">
+          <ActiveListings listings={listings} loading={loading} />
+        </div>
+      </div>
+    </div>
+  );
+}

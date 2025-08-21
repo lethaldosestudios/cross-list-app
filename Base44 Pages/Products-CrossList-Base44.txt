@@ -1,0 +1,203 @@
+
+import React, { useState, useEffect } from "react";
+import { Product } from "@/entities/Product";
+import { Listing } from "@/entities/Listing";
+import { Plus, Search, Filter, MoreHorizontal, Package } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+import ProductCard from "../components/products/ProductCard";
+import ProductForm from "../components/products/ProductForm";
+import ProductFilters from "../components/products/ProductFilters";
+
+export default function Products() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    category: "all",
+    condition: "all",
+    priceRange: "all"
+  });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      const data = await Product.list('-created_date');
+      setProducts(data);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (productData) => {
+    try {
+      if (editingProduct) {
+        await Product.update(editingProduct.id, productData);
+      } else {
+        await Product.create(productData);
+      }
+      setShowForm(false);
+      setEditingProduct(null);
+      loadProducts();
+    } catch (error) {
+      console.error('Error saving product:', error);
+    }
+  };
+
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (productId) => {
+    try {
+      await Product.delete(productId);
+      loadProducts();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
+  };
+
+  const handleCreateListing = (product) => {
+    // Navigate to listings page with product pre-selected
+    navigate(`${createPageUrl("Listings")}?product_id=${product.id}&action=create`);
+  };
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filters.category === "all" || product.category === filters.category;
+    const matchesCondition = filters.condition === "all" || product.condition === filters.condition;
+    
+    let matchesPrice = true;
+    if (filters.priceRange !== "all") {
+      const price = product.price;
+      switch (filters.priceRange) {
+        case "under-25":
+          matchesPrice = price < 25;
+          break;
+        case "25-100":
+          matchesPrice = price >= 25 && price <= 100;
+          break;
+        case "100-500":
+          matchesPrice = price >= 100 && price <= 500;
+          break;
+        case "over-500":
+          matchesPrice = price > 500;
+          break;
+      }
+    }
+
+    return matchesSearch && matchesCategory && matchesCondition && matchesPrice;
+  });
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: '#6b6b6b' }}>
+            Products
+          </h1>
+          <p style={{ color: '#999' }}>
+            Manage your product catalog
+          </p>
+        </div>
+        <button 
+          className="neumorph-button px-6 py-3 flex items-center gap-2 font-medium" 
+          style={{ color: '#6b6b6b' }}
+          onClick={() => setShowForm(true)}
+        >
+          <Plus className="w-4 h-4" />
+          Add Product
+        </button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="neumorph-card p-4 md:p-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: '#999' }} />
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="neumorph-input w-full pl-10 pr-4 py-3 font-medium"
+              style={{ color: '#6b6b6b' }}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <ProductFilters filters={filters} onFilterChange={setFilters} />
+        </div>
+
+        {/* Results Info */}
+        <div className="flex items-center justify-between mb-6">
+          <p style={{ color: '#999' }}>
+            {filteredProducts.length} products found
+          </p>
+        </div>
+
+        {/* Products Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array(6).fill(0).map((_, i) => (
+              <div key={i} className="neumorph-card p-6 animate-pulse">
+                <div className="aspect-square bg-gray-300 rounded-lg mb-4"></div>
+                <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                <div className="h-3 bg-gray-300 rounded mb-4"></div>
+                <div className="h-6 bg-gray-300 rounded"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onCreateListing={handleCreateListing}
+              />
+            ))}
+          </div>
+        )}
+
+        {!loading && filteredProducts.length === 0 && (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 mx-auto mb-4" style={{ color: '#999' }} />
+            <h3 className="text-lg font-medium mb-2" style={{ color: '#6b6b6b' }}>
+              No products found
+            </h3>
+            <p style={{ color: '#999' }}>
+              {searchTerm || filters.category !== "all" || filters.condition !== "all" || filters.priceRange !== "all"
+                ? "Try adjusting your search or filters"
+                : "Start by adding your first product"}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Product Form Modal */}
+      {showForm && (
+        <ProductForm
+          product={editingProduct}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingProduct(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}

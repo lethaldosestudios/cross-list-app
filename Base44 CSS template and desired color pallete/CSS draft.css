@@ -1,0 +1,26 @@
+:root {
+  /* Your Brand Colors */
+  --brand-primary: #81559b; /* Example primary color */
+  --brand-secondary: #337AFF; /* Example secondary color */
+  --brand-accent: #daff7d;    /* Example accent color */
+
+  /* Base Neumorphic Colors (adjust these based on your primary background) */
+  --neumorph-bg: #f0f0f0; /* Slightly lighter than #e0e0e0 for contrast */
+  --neumorph-light-shadow: #ffffff; /* Lighter shade for shadows */
+  --neumorph-dark-shadow: #bebebe; /* Darker shade for shadows */
+
+  /* Text Colors */
+  --text-primary: #14080e; /* Darker text for main content */
+  --text-secondary: #ebf2fa; /* Lighter text for descriptions/hints */
+  --icon-color: #14080e; /* Default icon color */
+}
+
+/* Existing neumorphic styles would then use these variables */
+.neumorph-card {
+  background: var(--neumorph-bg);
+  box-shadow: 
+    20px 20px 60px var(--neumorph-dark-shadow),
+    -20px -20px 60px var(--neumorph-light-shadow);
+}
+
+/* ... and so on for other elements ... */

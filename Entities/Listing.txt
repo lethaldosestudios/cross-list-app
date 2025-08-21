@@ -1,0 +1,101 @@
+{
+  "name": "Listing",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "description": "Reference to product"
+    },
+    "marketplace": {
+      "type": "string",
+      "enum": [
+        "ebay",
+        "amazon",
+        "facebook",
+        "mercari",
+        "poshmark",
+        "depop",
+        "etsy",
+        "shopify"
+      ]
+    },
+    "marketplace_id": {
+      "type": "string",
+      "description": "ID from the marketplace"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "sold",
+        "ended",
+        "suspended"
+      ],
+      "default": "draft"
+    },
+    "listing_price": {
+      "type": "number",
+      "description": "Price for this specific marketplace"
+    },
+    "listing_title": {
+      "type": "string",
+      "description": "Marketplace-specific title"
+    },
+    "listing_description": {
+      "type": "string",
+      "description": "Marketplace-specific description"
+    },
+    "views": {
+      "type": "number",
+      "default": 0
+    },
+    "watchers": {
+      "type": "number",
+      "default": 0
+    },
+    "listed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "auto_relist": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "product_id",
+    "marketplace",
+    "listing_price"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

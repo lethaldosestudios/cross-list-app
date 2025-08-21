@@ -1,0 +1,47 @@
+import React from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
+const COLORS = ['#0064d2', '#ff9900', '#1877f2', '#ff6348', '#731a83', '#ff0000', '#f56500', '#7ab55c'];
+
+export default function MarketplaceChart({ listings, loading }) {
+  const marketplaceData = listings.reduce((acc, listing) => {
+    const marketplace = listing.marketplace.charAt(0).toUpperCase() + listing.marketplace.slice(1);
+    if (!acc[marketplace]) {
+      acc[marketplace] = 0;
+    }
+    acc[marketplace] += 1;
+    return acc;
+  }, {});
+
+  const chartData = Object.entries(marketplaceData).map(([name, value]) => ({
+    name,
+    value
+  }));
+
+  return (
+    <div className="neumorph-card p-6">
+      <h2 className="text-xl font-bold mb-6" style={{ color: '#6b6b6b' }}>
+        Listings by Marketplace
+      </h2>
+      
+      {loading ? (
+        <div className="h-64 flex items-center justify-center">
+          <div className="animate-pulse">
+            <div className="w-32 h-32 bg-gray-300 rounded-full"></div>
+          </div>
+        </div>
+      ) : (
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

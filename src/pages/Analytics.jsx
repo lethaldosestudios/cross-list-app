@@ -1,0 +1,95 @@
+import React, { useState, useEffect } from "react";
+import { Listing } from "../entities/Listing";
+import { Product } from "../entities/Product";
+import { TrendingUp, Eye, Users, DollarSign, ShoppingCart } from "lucide-react";
+
+import StatsCard from "../components/dashboard/StatsCard";
+import MarketplaceChart from "../components/analytics/MarketplaceChart";
+import CategoryChart from "../components/analytics/CategoryChart";
+import PerformanceTable from "../components/analytics/PerformanceTable";
+
+export default function Analytics() {
+  const [listings, setListings] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [listingsData, productsData] = await Promise.all([
+        Listing.list(),
+        Product.list()
+      ]);
+      setListings(listingsData);
+      setProducts(productsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const analytics = {
+    totalListings: listings.length,
+    activeListings: listings.filter(l => l.status === 'active').length,
+    soldListings: listings.filter(l => l.status === 'sold').length,
+    totalViews: listings.reduce((sum, l) => sum + (l.views || 0), 0),
+    totalWatchers: listings.reduce((sum, l) => sum + (l.watchers || 0), 0),
+    totalRevenue: listings.filter(l => l.status === 'sold').reduce((sum, l) => sum + (l.listing_price || 0), 0),
+    conversionRate: listings.length > 0 ? (listings.filter(l => l.status === 'sold').length / listings.length * 100).toFixed(1) : 0
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold mb-2 text-licorice">
+          Analytics
+        </h1>
+        <p className="text-cool-gray">
+          Track your marketplace performance
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard
+          title="Total Listings"
+          value={analytics.totalListings}
+          icon={ShoppingCart}
+          loading={loading}
+        />
+        <StatsCard
+          title="Active Listings"
+          value={analytics.activeListings}
+          icon={TrendingUp}
+          loading={loading}
+        />
+        <StatsCard
+          title="Total Views"
+          value={analytics.totalViews.toLocaleString()}
+          icon={Eye}
+          loading={loading}
+        />
+        <StatsCard
+          title="Total Revenue"
+          value={`$${analytics.totalRevenue.toLocaleString()}`}
+          icon={DollarSign}
+          loading={loading}
+        />
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <MarketplaceChart listings={listings} loading={loading} />
+        <CategoryChart products={products} listings={listings} loading={loading} />
+      </div>
+
+      {/* Performance Table */}
+      <PerformanceTable listings={listings} products={products} loading={loading} />
+    </div>
+  );
+}
